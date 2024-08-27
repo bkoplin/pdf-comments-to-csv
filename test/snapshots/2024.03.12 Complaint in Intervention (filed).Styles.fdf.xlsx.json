@@ -1,0 +1,114 @@
+{
+  "NumberFmt": [
+    "General",
+    "0",
+    "0.00",
+    "#,##0",
+    "#,##0.00",
+    null,
+    null,
+    null,
+    null,
+    "0%",
+    "0.00%",
+    "0.00E+00",
+    "# ?/?",
+    "# ??/??",
+    "m/d/yy",
+    "d-mmm-yy",
+    "d-mmm",
+    "mmm-yy",
+    "h:mm AM/PM",
+    "h:mm:ss AM/PM",
+    "h:mm",
+    "h:mm:ss",
+    "m/d/yy h:mm",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "#,##0 ;(#,##0)",
+    "#,##0 ;[Red](#,##0)",
+    "#,##0.00;(#,##0.00)",
+    "#,##0.00;[Red](#,##0.00)",
+    null,
+    null,
+    null,
+    null,
+    "mm:ss",
+    "[h]:mm:ss",
+    "mmss.0",
+    "##0.0E+0",
+    "@",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+  ],
+  "Fonts": [
+    {
+      "sz": 12,
+      "color": {
+        "theme": 1,
+        "rgb": "000000"
+      },
+      "name": "Calibri",
+      "family": 2,
+      "scheme": "minor"
+    }
+  ],
+  "Fills": [
+    {
+      "patternType": "none"
+    },
+    {
+      "patternType": "gray125"
+    }
+  ],
+  "Borders": [
+    {}
+  ],
+  "CellXf": [
+    {
+      "numFmtId": 0,
+      "numfmtid": "0",
+      "fontId": 0,
+      "fontid": "0",
+      "fillId": 0,
+      "fillid": "0",
+      "borderId": 0,
+      "borderid": "0",
+      "xfId": 0,
+      "xfid": "0",
+      "applyNumberFormat": true,
+      "applynumberformat": "1"
+    },
+    {
+      "numFmtId": 14,
+      "numfmtid": "14",
+      "fontId": 0,
+      "fontid": "0",
+      "fillId": 0,
+      "fillid": "0",
+      "borderId": 0,
+      "borderid": "0",
+      "xfId": 0,
+      "xfid": "0",
+      "applyNumberFormat": true,
+      "applynumberformat": "1"
+    }
+  ]
+}

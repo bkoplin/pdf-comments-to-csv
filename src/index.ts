@@ -3,7 +3,7 @@ import * as fs from 'node:fs'
 import { anyOf, carriageReturn, charNotIn, createRegExp, digit, dotAll, exactly, global, linefeed, maybe, not, oneOrMore, whitespace, wordChar } from 'magic-regexp'
 import { colord, extend } from 'colord'
 import rgbPlugin from 'colord/plugins/'
-import { castArray, forEach, forOwn, isEqual, keyBy, map, mapValues, omit, pickBy, times, toNumber, uniq, uniqWith } from 'lodash-es'
+import { castArray, forEach, forOwn, isEqual, keyBy, map, mapValues, omit, padStart, pickBy, times, toNumber, uniq, uniqWith } from 'lodash-es'
 import { objectMap } from '@antfu/utils'
 import type { ValueOf } from 'type-fest'
 import { KeysOfUnion } from 'type-fest'
@@ -40,6 +40,7 @@ const fdfCreationDateRegExp = createRegExp(
   digit.times(2).as('second'),
   exactly('-').and(digit.times(2)).as('utc_offset'),
 )
+const fdfPageNumberRegExp = createRegExp('/Page ', digit.times.atLeast(1).as('page_number'), '/')
 const fdfAuthorRegExp = createRegExp(
   exactly('/T('),
   charNotIn(')').times.atLeast(1).groupedAs('author'),
@@ -55,6 +56,7 @@ export default function run(fdfPath: string): void {
 interface Cell {
   'color': string
   'closestColorName': string
+  'PAGE NUMBER': string | undefined
   'COLOR': XLSX.CellObject
   'TEXT': XLSX.CellObject | undefined
   'CREATED': XLSX.CellObject
@@ -63,47 +65,47 @@ interface Cell {
 }
 function generateExcelFromComments(fdfCommentObjects: Cell[], fdfPath: string): void {
   const workbook = XLSX.utils.book_new()
-  const styledCommentObjects = fdfCommentObjects.map(cell => ({
-    ...cell,
-    style: {
-      fill: {
-        patternType: 'solid',
-        fgColor: {
-          rgb: cell.color.replace('#', '').toUpperCase(),
-        },
-      },
-    },
-  }))
-  workbook.Styles = {
-    Fills: [
-      {
-        patternType: 'none',
-      },
-      {
-        patternType: 'gray125',
-      },
-      ...uniqWith(map(styledCommentObjects, o => o.style), isEqual),
-    ],
-  }
-  const commentBackgroundColors = keyBy(styledCommentObjects, o => o.closestColorName)
+  // const styledCommentObjects = fdfCommentObjects.map(cell => ({
+  //   ...cell,
+  //   style: {
+  //     fill: {
+  //       patternType: 'solid',
+  //       fgColor: {
+  //         rgb: cell.color.replace('#', '').toUpperCase(),
+  //       },
+  //     },
+  //   },
+  // }))
+  // workbook.Styles = {
+  //   Fills: [
+  //     {
+  //       patternType: 'none',
+  //     },
+  //     {
+  //       patternType: 'gray125',
+  //     },
+  //     ...uniqWith(map(styledCommentObjects, o => o.style), isEqual),
+  //   ],
+  // }
+  // const commentBackgroundColors = keyBy(styledCommentObjects, o => o.closestColorName)
   // .map(color => (
   // ))
-  const worksheet = XLSX.utils.json_to_sheet(fdfCommentObjects.map(o => pickBy(o, (v, k) => k !== 'color' && k !== 'closestColorName')), { cellDates: true, cellHTML: true, cellStyles: true, raw: true, dense: true })
-  const worksheetRange = XLSX.utils.decode_range(worksheet['!ref'] as string)
-  // console.log(worksheetRange)
-  times(worksheetRange.e.r, (rowIndex) => {
-    const rowData = worksheet['!data'][rowIndex]
-    if (rowIndex === 0 || typeof rowData === 'undefined')
-      return
-    const cellData = rowData[0]
-    if (typeof cellData === 'undefined')
-      return
-    // const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: 0 })
-    // console.log('🚀 ~ file: index.ts:63 ~ times ~ cellAddress:', cellAddress)
-    if (cellData.v in commentBackgroundColors) {
-      worksheet['!data'][rowIndex][0].s = commentBackgroundColors[cellData.v].style
-    }
-  })
+  const worksheet = XLSX.utils.json_to_sheet(fdfCommentObjects.map(o => pickBy(o, (v, k) => k !== 'color' && k !== 'closestColorName')), { cellDates: true, cellHTML: true, cellStyles: true, raw: true })
+  // const worksheetRange = XLSX.utils.decode_range(worksheet['!ref'] as string)
+  // // console.log(worksheetRange)
+  // times(worksheetRange.e.r, (rowIndex) => {
+  //   const rowData = worksheet['!data'][rowIndex]
+  //   if (rowIndex === 0 || typeof rowData === 'undefined')
+  //     return
+  //   const cellData = rowData[0]
+  //   if (typeof cellData === 'undefined')
+  //     return
+  //   // const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: 0 })
+  //   // console.log('🚀 ~ file: index.ts:63 ~ times ~ cellAddress:', cellAddress)
+  //   if (cellData.v in commentBackgroundColors) {
+  //     worksheet['!data'][rowIndex][0].s = commentBackgroundColors[cellData.v].style
+  //   }
+  // })
   // forEach(fdfCommentObjects, (fdfCommentObject, i) => {
   // })
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Comments')
@@ -115,6 +117,7 @@ export function parseFdfComments(fdfComments: string[]): Cell[] {
     const fdfColorMatchGroups = fdfComment.match(fdfColorRegExp)?.groups
     const fdfCreationDateGroups = fdfComment.match(fdfCreationDateRegExp)?.groups
     const fdfAuthorGroups = fdfComment.match(fdfAuthorRegExp)?.groups
+    const fdfPageNumberGroups = fdfComment.match(fdfPageNumberRegExp)?.groups
     const commentText = fdfComment.match(fdfContentsRegExp)?.groups?.comment_text
     const colorObject = { r: 0, g: 0, b: 0, a: 0 }
     const creationDateObject = { year: 0, month: 0, day: 0, hour: 0, minute: 0, second: 0, utc_offset: 0 }
@@ -141,6 +144,7 @@ export function parseFdfComments(fdfComments: string[]): Cell[] {
     return {
       color,
       closestColorName,
+      'PAGE NUMBER': fdfPageNumberGroups?.page_number ? padStart(toNumber(fdfPageNumberGroups.page_number) + 1, 3, '0') : undefined,
       'COLOR': {
         t: 's',
         v: `${closestColorName}`,
@@ -156,9 +160,6 @@ export function parseFdfComments(fdfComments: string[]): Cell[] {
         },
       },
       'TEXT': { t: 't', v: commentText },
-      // colorObject,
-      // creationDateObject,
-      // 'CREATED': { t: 't', v: moment(creationDateObject).utcOffset(creationDateObject.utc_offset).tz(moment.tz.guess()).format('YYYY-MM-DD h:mm:ss A z') },
       'CREATED DATE': { t: 'd', v: moment(creationDateObject).utcOffset(creationDateObject.utc_offset).tz(moment.tz.guess()).toDate() },
       'CREATED BY': { t: 't', v: authorObject.author },
     }
